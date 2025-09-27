@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardPrimaryAction,
@@ -23,32 +23,28 @@ function Player({ match }) {
   const date = new Date();
   const year = date.getFullYear();
   console.log(year);
+
+  const fetchRoster = useCallback(async () => {
+    const [{people}, {stats}] = await Promise.all([
+        fetch(`https://statsapi.web.nhl.com/api/v1/people/${match.params.id}`).then(data => data.json()),
+        fetch(`https://statsapi.web.nhl.com/api/v1/people/${match.params.id}/stats?stats=statsSingleSeason&season=${year - 1}${year}`).then(data => data.json())
+      ]);
+    
+    setPlayer(people);
+    setCurrentTeam(people[0].currentTeam.name);
+    const stat = stats[0].splits[0].stat;
+    setStatistics(stat);
+    console.log("player", people);
+    console.log("Player statistics", stat);
+  }, [setPlayer, setCurrentTeam, setStatistics]);
+
   useEffect(() => {
     fetchRoster();
-  }, []);
-
-  const fetchRoster = async () => {
-    const data = await fetch(
-      `https://statsapi.web.nhl.com/api/v1/people/${match.params.id}`
-    );
-
-    const stats = await fetch(
-      `https://statsapi.web.nhl.com/api/v1/people/${
-        match.params.id
-      }/stats?stats=statsSingleSeason&season=${year - 1}${year}`
-    );
-    const player = await data.json();
-    const statistics = await stats.json();
-    setPlayer(player.people);
-    setCurrentTeam(player.people[0].currentTeam.name);
-    setStatistics(statistics.stats[0].splits[0].stat);
-    console.log("player", player.people);
-    console.log("Player statistics", statistics.stats[0].splits[0].stat);
-  };
+  }, [fetchRoster]);
 
   return (
     <div>
-      <h3> {currentTeam ? currentTeam : "Team"}</h3>
+      <h3> {currentTeam || "Team"}</h3>
       {player &&
         Object.values(player).map(
           ({
