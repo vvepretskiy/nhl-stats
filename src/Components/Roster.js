@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { List, ListItem, SimpleListItem } from "@rmwc/list";
 import { Grid, GridCell } from "@rmwc/grid";
@@ -8,31 +8,28 @@ import "../App.css";
 
 function Roster({ match }) {
   const [roster, setRoster] = useState([]);
-  const [team, setTeam] = useState([]);
+  const [teamName, setTeamName] = useState('');
 
   useEffect(() => {
     // const { id } = props.match.params;
     fetchRoster();
-  }, []);
+  }, [fetchRoster]);
 
-  const fetchRoster = async () => {
-    const teamData = await fetch(
-      `https://statsapi.web.nhl.com/api/v1/teams/${match.params.id}`
-    );
-    const data = await fetch(
-      `https://statsapi.web.nhl.com/api/v1/teams/${match.params.id}/roster`
-    );
-    const team = await teamData.json();
-    const roster = await data.json();
-    setRoster(roster.roster);
-    setTeam(team.teams[0]);
-    console.log("roster", roster.roster);
-    console.log("team", team.teams[0]);
-  };
+  const fetchRoster = useCallback(async () => {
+    const [{teams}, {roster}] = await Promise.all([
+      fetch(`https://statsapi.web.nhl.com/api/v1/teams/${match.params.id}`).then(data => data.json()),
+      fetch(`https://statsapi.web.nhl.com/api/v1/teams/${match.params.id}/roster`).then(data => data.json())
+    ]);
+
+    setRoster(roster);
+    setTeamName(teams[0].name);
+    console.log("roster", roster);
+    console.log("team", teams[0]);
+  }, [setTeamName, setRoster]);
 
   return (
     <div>
-      <h3>Roster of {team.name}</h3>
+      <h3>Roster of {teamName}</h3>
       <Grid>
         {roster &&
           Object.values(roster).map(
